@@ -1,9 +1,9 @@
 [package]
-name = "template_rust"
+name = "gol-rust"
 version = "0.1.0"
-description = "A template for creating Rust applications."
+description = "Conway's Game of Life — GPU-accelerated Rust simulation (Phase 1: CPU correctness baseline)"
 edition = "2024"
-repository = "https://github.com/javidahmed64592/template-rust"
+repository = "https://github.com/javidahmed64592/gol-rust"
 license = "MIT"
 authors = ["Javid Ahmed <javidahmed@icloud.com>"]
 
@@ -14,6 +14,9 @@ license = false
 eula = false
 
 [dependencies]
+# Phase 1: simple CPU framebuffer window — replaced by wgpu in Phase 2
+minifb = "0.27"
+rand = "0.8"
 
 [profile.dist]
 inherits = "release"
