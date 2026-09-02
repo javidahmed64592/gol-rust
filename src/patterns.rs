@@ -1,5 +1,5 @@
 /// (dx, dy) offsets from a centre point.  Seed via `Grid::seed_pattern`.
-
+///
 /// Classic glider — moves toward (+x, +y) every 4 generations.
 ///
 /// ```text
