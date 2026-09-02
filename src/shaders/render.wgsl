@@ -2,10 +2,14 @@
 // fragment shader maps each pixel to a grid cell and samples the storage buffer.
 
 struct Params {
-    grid_w: u32,
-    grid_h: u32,
-    toroidal: u32, // unused in render shader, kept in sync with sim Params
-    _pad:    u32,
+    grid_w:       u32,
+    grid_h:       u32,
+    toroidal:     u32,
+    birth_mask:   u32, // unused in render shader
+    survive_mask: u32, // unused in render shader
+    _pad0:        u32,
+    _pad1:        u32,
+    _pad2:        u32,
 }
 
 struct VsOut {

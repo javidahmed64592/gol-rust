@@ -1,11 +1,15 @@
-// Conway's Game of Life compute shader — B3/S23 rules.
+// Conway's Game of Life compute shader — configurable B/S rules via bitmasks.
 // Each invocation handles one cell; workgroups are 8×8.
 
 struct Params {
-    grid_w:   u32,
-    grid_h:   u32,
-    toroidal: u32, // 1 = wraparound, 0 = fixed dead boundary
-    _pad:     u32,
+    grid_w:       u32,
+    grid_h:       u32,
+    toroidal:     u32, // 1 = wraparound, 0 = fixed dead boundary
+    birth_mask:   u32, // bit N set → dead cell with N neighbours is born
+    survive_mask: u32, // bit N set → live cell with N neighbours survives
+    _pad0:        u32,
+    _pad1:        u32,
+    _pad2:        u32,
 }
 
 @group(0) @binding(0) var<uniform>              params:    Params;
@@ -43,7 +47,11 @@ fn cs_main(@builtin(global_invocation_id) gid: vec3<u32>) {
         u32(get_cell(x + 1, y + 1) > 0.5);
 
     let alive = get_cell(x, y) > 0.5;
-    // B3/S23: born with 3 neighbours; survives with 2 or 3.
-    let next  = n == 3u || (alive && n == 2u);
+    // Birth/survive via bitmasks: bit N is set if N neighbours trigger the rule.
+    let next = select(
+        ((params.birth_mask   >> n) & 1u) != 0u,
+        ((params.survive_mask >> n) & 1u) != 0u,
+        alive,
+    );
     cells_out[gid.y * params.grid_w + gid.x] = select(0.0, 1.0, next);
 }
