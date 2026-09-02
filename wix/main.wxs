@@ -60,7 +60,7 @@
 
     <Product
         Id='*'
-        Name='template_rust'
+        Name='gol-rust'
         UpgradeCode='F907DF88-7AA9-4257-AD19-515DF69BAAC3'
         Manufacturer='Javid Ahmed'
         Language='1033'
@@ -69,7 +69,7 @@
 
         <Package Id='*'
             Keywords='Installer'
-            Description='A template for creating Rust applications.'
+            Description='Conway&#39;s Game of Life — GPU-accelerated Rust simulation (Phase 1: CPU correctness baseline)'
             Manufacturer='Javid Ahmed'
             InstallerVersion='450'
             Languages='1033'
@@ -83,11 +83,11 @@
             DowngradeErrorMessage='A newer version of [ProductName] is already installed. Setup will now exit.'/>
 
         <Media Id='1' Cabinet='media1.cab' EmbedCab='yes' DiskPrompt='CD-ROM #1'/>
-        <Property Id='DiskPrompt' Value='template_rust Installation'/>
+        <Property Id='DiskPrompt' Value='gol-rust Installation'/>
 
         <Directory Id='TARGETDIR' Name='SourceDir'>
             <Directory Id='$(var.PlatformProgramFilesFolder)' Name='PFiles'>
-                <Directory Id='APPLICATIONFOLDER' Name='template_rust'>
+                <Directory Id='APPLICATIONFOLDER' Name='gol-rust'>
                     
                     <!--
                       Enabling the license sidecar file in the installer is a four step process:
@@ -123,9 +123,9 @@
                         <Component Id='binary0' Guid='*'>
                             <File
                                 Id='exe0'
-                                Name='template_rust.exe'
+                                Name='gol-rust.exe'
                                 DiskId='1'
-                                Source='$(var.CargoTargetBinDir)\template_rust.exe'
+                                Source='$(var.CargoTargetBinDir)\gol-rust.exe'
                                 KeyPath='yes'/>
                         </Component>
                     </Directory>
@@ -173,7 +173,7 @@
         <!--<Icon Id='ProductICO' SourceFile='wix\Product.ico'/>-->
         <!--<Property Id='ARPPRODUCTICON' Value='ProductICO' />-->
 
-        <Property Id='ARPHELPLINK' Value='https://github.com/javidahmed64592/template-rust'/>
+        <Property Id='ARPHELPLINK' Value='https://github.com/javidahmed64592/gol-rust'/>
         
         <UI>
             <UIRef Id='WixUI_FeatureTree'/>
