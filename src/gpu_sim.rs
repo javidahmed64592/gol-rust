@@ -233,8 +233,7 @@ impl GpuSim {
             });
             cpass.set_pipeline(&self.compute_pipeline);
             cpass.set_bind_group(0, &self.compute_bgs[self.front], &[]);
-            let wg = |n: u32| (n + 7) / 8;
-            cpass.dispatch_workgroups(wg(self.grid_w), wg(self.grid_h), 1);
+            cpass.dispatch_workgroups(self.grid_w.div_ceil(8), self.grid_h.div_ceil(8), 1);
         }
         queue.submit(std::iter::once(encoder.finish()));
         self.front = 1 - self.front;

@@ -9,7 +9,9 @@ pub struct Grid {
     /// Current generation cell states, row-major: index = y * width + x.
     pub cells: Vec<f32>,
     /// Toroidal (true) or fixed-boundary (false) wrapping.
+    #[allow(dead_code)]
     pub toroidal: bool,
+    #[allow(dead_code)]
     scratch: Vec<f32>,
 }
 
@@ -50,6 +52,7 @@ impl Grid {
     }
 
     #[inline]
+    #[allow(dead_code)] // used in tests and Phase 4 save-state reads
     pub fn get(&self, x: isize, y: isize) -> f32 {
         if self.toroidal {
             let xi = x.rem_euclid(self.width as isize) as usize;
@@ -64,6 +67,7 @@ impl Grid {
     }
 
     #[inline]
+    #[allow(dead_code)]
     fn live_neighbors(&self, x: isize, y: isize) -> u8 {
         let mut n = 0u8;
         for dy in -1i8..=1 {
@@ -80,6 +84,7 @@ impl Grid {
     }
 
     /// Advance one generation using B3/S23 rules.
+    #[allow(dead_code)] // used in tests; GPU sim runs in production
     pub fn tick(&mut self) {
         for y in 0..self.height {
             for x in 0..self.width {
