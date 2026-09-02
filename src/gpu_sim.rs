@@ -9,9 +9,13 @@ use wgpu::util::DeviceExt;
 pub struct Params {
     pub grid_w: u32,
     pub grid_h: u32,
-    /// 1 = toroidal wrap, 0 = fixed boundary (dead outside edges).
+    /// 1 = toroidal wrap, 0 = fixed boundary.
     pub toroidal: u32,
-    _pad: u32,
+    /// Bitmask: bit N set → dead cell with N neighbours is born.
+    pub birth_mask: u32,
+    /// Bitmask: bit N set → live cell with N neighbours survives.
+    pub survive_mask: u32,
+    _pad: [u32; 3], // pad to 32 bytes for uniform buffer alignment
 }
 
 /// GPU simulation state: two ping-pong storage buffers, compute pipeline,
@@ -21,7 +25,7 @@ pub struct Params {
 /// always reads through `display_bind_group()`.
 pub struct GpuSim {
     cell_bufs: [wgpu::Buffer; 2],
-    #[allow(dead_code)] // exposed via queue.write_buffer in Phase 4 for runtime param updates
+    #[allow(dead_code)] // bind groups hold a GPU ref; this handle prevents premature deallocation
     params_buf: wgpu::Buffer,
     front: usize,
     compute_pipeline: wgpu::ComputePipeline,
@@ -39,6 +43,9 @@ impl GpuSim {
         render_cell_bg_layout: &wgpu::BindGroupLayout,
         grid_w: u32,
         grid_h: u32,
+        toroidal: bool,
+        birth_mask: u32,
+        survive_mask: u32,
     ) -> Self {
         let cell_size = (grid_w * grid_h) as u64 * std::mem::size_of::<f32>() as u64;
 
@@ -57,11 +64,14 @@ impl GpuSim {
             }),
         ];
 
+        // GoL defaults: B3/S23
         let params = Params {
             grid_w,
             grid_h,
-            toroidal: 1,
-            _pad: 0,
+            toroidal: toroidal as u32,
+            birth_mask,
+            survive_mask,
+            _pad: [0; 3],
         };
         let params_buf = ctx
             .device

@@ -15,14 +15,14 @@ license = false
 eula = false
 
 [dependencies]
-# Phase 2/3: GPU compute + rendering
 wgpu = "0.20"
 winit = "0.30"
 bytemuck = { version = "1", features = ["derive"] }
 pollster = "0.3"
 env_logger = "0.11"
-# CPU grid (seeding, patterns, unit-test correctness baseline)
 rand = "0.8"
+serde = { version = "1", features = ["derive"] }
+toml = "0.8"
 
 [profile.dist]
 inherits = "release"

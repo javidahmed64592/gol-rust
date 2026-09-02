@@ -1,0 +1,28 @@
+# Conway's Game of Life — runtime configuration
+# Edit this file and restart the program to apply changes.
+
+[grid]
+width    = 256    # cells wide
+height   = 256    # cells tall
+toroidal = true   # wrap edges; false = dead fixed boundary
+
+[rules]
+# Neighbour counts that cause a dead cell to be born (B rule).
+birth   = [3]
+
+# Neighbour counts that allow a live cell to survive (S rule).
+survive = [2, 3]
+
+# Other interesting rules (uncomment one block at a time):
+#   HighLife:  birth = [3, 6]        survive = [2, 3]
+#   Day&Night: birth = [3, 6, 7, 8]  survive = [3, 4, 6, 7, 8]
+#   Seeds:     birth = [2]            survive = []
+#   Morley:    birth = [3, 6, 8]      survive = [2, 4, 5]
+
+[simulation]
+ticks_per_second = 10.0  # starting TPS (↑/↓ keys adjust at runtime)
+initial_density  = 0.3   # fraction of cells alive on R (random reset)
+
+[window]
+width  = 1024
+height = 1024
