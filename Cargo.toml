@@ -1,9 +1,10 @@
 [package]
 name = "gol-rust"
 version = "0.1.0"
-description = "Conway's Game of Life — GPU-accelerated Rust simulation (Phase 1: CPU correctness baseline)"
+description = "Game of Life in Rust."
 edition = "2024"
 repository = "https://github.com/javidahmed64592/gol-rust"
+homepage = "https://github.com/javidahmed64592/gol-rust"
 license = "MIT"
 authors = ["Javid Ahmed <javidahmed@icloud.com>"]
 
@@ -14,8 +15,13 @@ license = false
 eula = false
 
 [dependencies]
-# Phase 1: simple CPU framebuffer window — replaced by wgpu in Phase 2
-minifb = "0.27"
+# Phase 2/3: GPU compute + rendering
+wgpu = "0.20"
+winit = "0.30"
+bytemuck = { version = "1", features = ["derive"] }
+pollster = "0.3"
+env_logger = "0.11"
+# CPU grid (seeding, patterns, unit-test correctness baseline)
 rand = "0.8"
 
 [profile.dist]

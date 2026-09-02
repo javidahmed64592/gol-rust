@@ -69,7 +69,7 @@
 
         <Package Id='*'
             Keywords='Installer'
-            Description='Conway&#39;s Game of Life — GPU-accelerated Rust simulation (Phase 1: CPU correctness baseline)'
+            Description='Game of Life in Rust.'
             Manufacturer='Javid Ahmed'
             InstallerVersion='450'
             Languages='1033'
