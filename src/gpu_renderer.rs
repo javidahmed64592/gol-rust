@@ -1,14 +1,39 @@
 use crate::gpu_context::GpuContext;
+use bytemuck::{Pod, Zeroable};
+use wgpu::util::DeviceExt;
+
+/// HSV visual parameters uploaded once at startup from `[visuals]` in `gol.toml`.
+#[repr(C)]
+#[derive(Clone, Copy, Pod, Zeroable)]
+pub struct VisualParams {
+    pub start_hue: f32,
+    pub end_hue: f32,
+    pub max_lifetime: f32,
+    pub sat_min: f32,
+    pub sat_max: f32,
+    pub val_min: f32,
+    pub val_max: f32,
+    pub _pad: f32,
+}
+
+impl Default for VisualParams {
+    fn default() -> Self {
+        bytemuck::Zeroable::zeroed()
+    }
+}
 
 /// Owns the render pipeline and the bind-group layout that `GpuSim` uses
 /// to wire the cell storage buffers into the fragment shader.
 pub struct GpuRenderer {
     render_pipeline: wgpu::RenderPipeline,
     cell_bind_group_layout: wgpu::BindGroupLayout,
+    #[allow(dead_code)] // GPU buffer kept alive via bind group ref
+    visual_params_buf: wgpu::Buffer,
+    visual_bg: wgpu::BindGroup,
 }
 
 impl GpuRenderer {
-    pub fn new(ctx: &GpuContext) -> Self {
+    pub fn new(ctx: &GpuContext, visual_params: VisualParams) -> Self {
         let shader = ctx
             .device
             .create_shader_module(wgpu::include_wgsl!("shaders/render.wgsl"));
@@ -42,11 +67,43 @@ impl GpuRenderer {
                     ],
                 });
 
+        // group(1): VisualParams uniform — HSV coloring configuration
+        let visual_bg_layout =
+            ctx.device
+                .create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+                    label: Some("visual_bgl"),
+                    entries: &[wgpu::BindGroupLayoutEntry {
+                        binding: 0,
+                        visibility: wgpu::ShaderStages::FRAGMENT,
+                        ty: wgpu::BindingType::Buffer {
+                            ty: wgpu::BufferBindingType::Uniform,
+                            has_dynamic_offset: false,
+                            min_binding_size: None,
+                        },
+                        count: None,
+                    }],
+                });
+        let visual_params_buf = ctx
+            .device
+            .create_buffer_init(&wgpu::util::BufferInitDescriptor {
+                label: Some("visual_params"),
+                contents: bytemuck::bytes_of(&visual_params),
+                usage: wgpu::BufferUsages::UNIFORM,
+            });
+        let visual_bg = ctx.device.create_bind_group(&wgpu::BindGroupDescriptor {
+            label: Some("visual_bg"),
+            layout: &visual_bg_layout,
+            entries: &[wgpu::BindGroupEntry {
+                binding: 0,
+                resource: visual_params_buf.as_entire_binding(),
+            }],
+        });
+
         let pipeline_layout = ctx
             .device
             .create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
                 label: Some("render_layout"),
-                bind_group_layouts: &[&cell_bind_group_layout],
+                bind_group_layouts: &[&cell_bind_group_layout, &visual_bg_layout],
                 push_constant_ranges: &[],
             });
 
@@ -83,6 +140,8 @@ impl GpuRenderer {
         Self {
             render_pipeline,
             cell_bind_group_layout,
+            visual_params_buf,
+            visual_bg,
         }
     }
 
@@ -113,6 +172,7 @@ impl GpuRenderer {
         });
         rpass.set_pipeline(&self.render_pipeline);
         rpass.set_bind_group(0, cells_bg, &[]);
+        rpass.set_bind_group(1, &self.visual_bg, &[]);
         rpass.draw(0..4, 0..1); // 4 vertices → TriangleStrip quad
     }
 }

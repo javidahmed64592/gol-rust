@@ -47,7 +47,8 @@ impl GpuSim {
         birth_mask: u32,
         survive_mask: u32,
     ) -> Self {
-        let cell_size = (grid_w * grid_h) as u64 * std::mem::size_of::<f32>() as u64;
+        // 2 f32 per cell: x = state, y = age (matches vec2<f32> in WGSL)
+        let cell_size = (grid_w * grid_h) as u64 * 2 * std::mem::size_of::<f32>() as u64;
 
         let cell_bufs = [
             ctx.device.create_buffer(&wgpu::BufferDescriptor {
