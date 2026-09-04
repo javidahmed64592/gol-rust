@@ -12,6 +12,8 @@ pub struct Config {
     pub simulation: SimulationConfig,
     #[serde(default)]
     pub visuals: VisualsConfig,
+    #[serde(default)]
+    pub smoothlife: SmoothlifeConfig,
 }
 
 #[derive(Deserialize)]
@@ -185,6 +187,78 @@ fn default_val_max() -> f32 {
     1.0
 }
 
+#[derive(Deserialize)]
+pub struct SmoothlifeConfig {
+    /// Set to `true` to start in SmoothLife mode; toggleable at runtime with M.
+    #[serde(default)]
+    pub enabled: bool,
+    /// Radius of the inner disk used to compute the cell's own density (m).
+    #[serde(default = "default_inner_radius")]
+    pub inner_radius: f32,
+    /// Outer radius of the ring kernel used to compute neighbour density (n).
+    #[serde(default = "default_outer_radius")]
+    pub outer_radius: f32,
+    /// Lower bound of the birth interval in neighbour density space.
+    #[serde(default = "default_birth_lo")]
+    pub birth_lo: f32,
+    /// Upper bound of the birth interval.
+    #[serde(default = "default_birth_hi")]
+    pub birth_hi: f32,
+    /// Lower bound of the survival interval.
+    #[serde(default = "default_survive_lo")]
+    pub survive_lo: f32,
+    /// Upper bound of the survival interval.
+    #[serde(default = "default_survive_hi")]
+    pub survive_hi: f32,
+    /// Controls sigmoid steepness — lower = smoother, higher = more step-like.
+    #[serde(default = "default_sigmoid_sharpness")]
+    pub sigmoid_sharpness: f32,
+    /// Energy level at which a cell is considered alive for age/birth tracking.
+    #[serde(default = "default_age_threshold")]
+    pub age_threshold: f32,
+}
+
+impl Default for SmoothlifeConfig {
+    fn default() -> Self {
+        Self {
+            enabled: false,
+            inner_radius: default_inner_radius(),
+            outer_radius: default_outer_radius(),
+            birth_lo: default_birth_lo(),
+            birth_hi: default_birth_hi(),
+            survive_lo: default_survive_lo(),
+            survive_hi: default_survive_hi(),
+            sigmoid_sharpness: default_sigmoid_sharpness(),
+            age_threshold: default_age_threshold(),
+        }
+    }
+}
+
+fn default_inner_radius() -> f32 {
+    2.0
+}
+fn default_outer_radius() -> f32 {
+    6.0
+}
+fn default_birth_lo() -> f32 {
+    0.278
+}
+fn default_birth_hi() -> f32 {
+    0.365
+}
+fn default_survive_lo() -> f32 {
+    0.267
+}
+fn default_survive_hi() -> f32 {
+    0.445
+}
+fn default_sigmoid_sharpness() -> f32 {
+    0.028
+}
+fn default_age_threshold() -> f32 {
+    0.1
+}
+
 impl Config {
     /// Load from `gol.toml` in the current directory; fall back to defaults if absent.
     pub fn load() -> Self {
@@ -212,6 +286,31 @@ impl Config {
         assert!(
             (0.0_f32..=1.0).contains(&self.simulation.initial_density),
             "gol.toml: initial_density must be 0.0–1.0"
+        );
+        let sl = &self.smoothlife;
+        assert!(
+            sl.inner_radius > 0.0,
+            "gol.toml: smoothlife.inner_radius must be > 0"
+        );
+        assert!(
+            sl.outer_radius > sl.inner_radius,
+            "gol.toml: smoothlife.outer_radius must be > inner_radius"
+        );
+        assert!(
+            sl.birth_lo < sl.birth_hi,
+            "gol.toml: smoothlife.birth_lo must be < birth_hi"
+        );
+        assert!(
+            sl.survive_lo < sl.survive_hi,
+            "gol.toml: smoothlife.survive_lo must be < survive_hi"
+        );
+        assert!(
+            sl.sigmoid_sharpness > 0.0,
+            "gol.toml: smoothlife.sigmoid_sharpness must be > 0"
+        );
+        assert!(
+            sl.age_threshold > 0.0 && sl.age_threshold < 1.0,
+            "gol.toml: smoothlife.age_threshold must be in (0, 1)"
         );
     }
 

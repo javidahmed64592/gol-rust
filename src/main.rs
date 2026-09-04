@@ -8,7 +8,7 @@ mod patterns;
 use config::Config;
 use gpu_context::GpuContext;
 use gpu_renderer::{GpuRenderer, VisualParams};
-use gpu_sim::GpuSim;
+use gpu_sim::{GpuSim, Params};
 use grid::Grid;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
@@ -41,6 +41,7 @@ struct App {
     last_frame: Instant,
     blur_enabled: bool,
     blur_radius: f32,
+    smoothlife_mode: bool,
     cfg: Config,
 }
 
@@ -61,6 +62,7 @@ impl App {
             last_frame: Instant::now(),
             blur_enabled: cfg.visuals.blur_enabled,
             blur_radius: cfg.visuals.blur_radius,
+            smoothlife_mode: cfg.smoothlife.enabled,
             cfg,
         }
     }
@@ -121,11 +123,24 @@ impl ApplicationHandler for App {
         let sim = GpuSim::new(
             &ctx,
             renderer.cell_bind_group_layout(),
-            self.cfg.grid.width,
-            self.cfg.grid.height,
-            self.cfg.grid.toroidal,
-            self.cfg.birth_mask(),
-            self.cfg.survive_mask(),
+            Params {
+                grid_w: self.cfg.grid.width,
+                grid_h: self.cfg.grid.height,
+                toroidal: self.cfg.grid.toroidal as u32,
+                mode: self.smoothlife_mode as u32,
+                birth_mask: self.cfg.birth_mask(),
+                survive_mask: self.cfg.survive_mask(),
+                _pad0: 0,
+                _pad1: 0,
+                inner_radius: self.cfg.smoothlife.inner_radius,
+                outer_radius: self.cfg.smoothlife.outer_radius,
+                birth_lo: self.cfg.smoothlife.birth_lo,
+                birth_hi: self.cfg.smoothlife.birth_hi,
+                survive_lo: self.cfg.smoothlife.survive_lo,
+                survive_hi: self.cfg.smoothlife.survive_hi,
+                sigmoid_sharpness: self.cfg.smoothlife.sigmoid_sharpness,
+                age_threshold: self.cfg.smoothlife.age_threshold,
+            },
         );
         sim.upload_cells(&ctx.queue, &self.grid.cells);
         self.window = Some(window);
@@ -165,6 +180,7 @@ impl App {
                     patterns::GLIDER,
                     g.width as isize / 4,
                     g.height as isize / 4,
+                    200.0,
                 );
             }),
             KeyCode::KeyB => self.reset_to(|g| {
@@ -172,16 +188,23 @@ impl App {
                     patterns::BLINKER,
                     g.width as isize / 2,
                     g.height as isize / 2,
+                    120.0,
                 );
             }),
             KeyCode::KeyT => self.reset_to(|g| {
-                g.seed_pattern(patterns::TOAD, g.width as isize / 2, g.height as isize / 2);
+                g.seed_pattern(
+                    patterns::TOAD,
+                    g.width as isize / 2,
+                    g.height as isize / 2,
+                    60.0,
+                );
             }),
             KeyCode::KeyP => self.reset_to(|g| {
                 g.seed_pattern(
                     patterns::R_PENTOMINO,
                     g.width as isize / 2,
                     g.height as isize / 2,
+                    300.0,
                 );
             }),
             KeyCode::KeyC => self.reset_to(|g| {
@@ -189,6 +212,7 @@ impl App {
                     patterns::BEACON,
                     g.width as isize / 2,
                     g.height as isize / 2,
+                    160.0,
                 );
             }),
             KeyCode::ArrowUp => {
@@ -215,6 +239,12 @@ impl App {
                 self.blur_radius = (self.blur_radius + 0.5).min(10.0);
                 if let Some((ctx, renderer, _)) = &mut self.gpu {
                     renderer.set_blur_radius(&ctx.queue, self.blur_radius);
+                }
+            }
+            KeyCode::KeyM => {
+                self.smoothlife_mode = !self.smoothlife_mode;
+                if let Some((ctx, _, sim)) = &mut self.gpu {
+                    sim.set_mode(&ctx.queue, self.smoothlife_mode as u32);
                 }
             }
             _ => {}
@@ -271,6 +301,11 @@ impl App {
 
         let tps = (1.0 / self.tick_interval.as_secs_f64()).round() as u32;
         let rule = rule_notation(self.cfg.birth_mask(), self.cfg.survive_mask());
+        let mode_label = if self.smoothlife_mode {
+            "SmoothLife"
+        } else {
+            "GoL"
+        };
         let blur_info = if self.blur_enabled {
             format!("Blur:{:.1}px", self.blur_radius)
         } else {
@@ -278,9 +313,10 @@ impl App {
         };
         if let Some(w) = &self.window {
             w.set_title(&format!(
-                "GoL [{rule}]  Gen {gen}  {tps}tps  {state}  {blur}\
-                 \u{2003}  |  Space=Pause  Enter=Step  R=Random  ↑↓=TPS  F=Blur  [/]=Radius\
+                "{mode} [{rule}]  Gen {gen}  {tps}tps  {state}  {blur}\
+                 \u{2003}  |  Space=Pause  Enter=Step  R=Random  ↑↓=TPS  M=Mode  F=Blur  [/]=Radius\
                  \u{2003}  |  G=Glider  B=Blinker  T=Toad  P=R-pentomino  C=Beacon",
+                mode  = mode_label,
                 gen   = self.generation,
                 state = if self.paused { "PAUSED" } else { "RUNNING" },
                 blur  = blur_info,
