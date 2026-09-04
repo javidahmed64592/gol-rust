@@ -69,7 +69,7 @@
 
         <Package Id='*'
             Keywords='Installer'
-            Description='Game of Life in Rust.'
+            Description='GPU-accelerated Conway&#39;s Game of Life and SmoothLife in Rust.'
             Manufacturer='Javid Ahmed'
             InstallerVersion='450'
             Languages='1033'
