@@ -2,7 +2,78 @@
 
 ## Project summary
 
-GPU-accelerated Conway's Game of Life in Rust, currently in the **visuals phase**.
+GPU-accelerated Conway's Game of Life and SmoothLife in Rust. Both simulation and rendering run entirely on the GPU via `wgpu`; the CPU handles only window input, timing, and initial seeding. All runtime parameters are driven by `gol.toml`.
+
+## Architecture layers
+
+| Layer           | Module(s)                                 | Responsibility                                                          |
+| --------------- | ----------------------------------------- | ----------------------------------------------------------------------- |
+| Simulation data | `grid.rs`, `patterns.rs`                  | CPU-side seed buffer, pattern seeding with initial hues                 |
+| Config          | `config.rs` + `gol.toml`                  | Load and validate all runtime parameters                                |
+| GPU init        | `gpu_context.rs`                          | `wgpu` adapter / device / surface / swap-chain config                   |
+| GPU simulation  | `gpu_sim.rs` + `shaders/sim.wgsl`         | Compute pipeline, ping-pong storage buffers, GoL and SmoothLife shaders |
+| GPU rendering   | `gpu_renderer.rs` + `shaders/render.wgsl` | Two-pass render: HSV cell colouring → Gaussian blur → swapchain         |
+| App / input     | `main.rs`                                 | `winit` `ApplicationHandler`, keyboard input, tick timing               |
+
+## Key design decisions
+
+- **Cell buffer layout is `vec4<f32>` per cell** — `.x = energy` (0.0–1.0), `.y = age` (ticks alive above threshold), `.z = hue` (0–360°, inherited on birth), `.w = reserved`.
+- **Two simulation modes** toggled at runtime with M: discrete GoL (B/S bitmasks) and SmoothLife (ring-kernel convolution + smooth sigmoid rule).
+- **Hue inheritance on birth**: new cells take an energy-weighted circular mean of alive-neighbour hues (unit-vector method), in both modes.
+- **Ping-pong storage buffers** (`cells_a`, `cells_b`): each tick reads from `front`, writes to `1-front`, then swaps. The renderer always reads `front`.
+- **`Params` uniform** (64 bytes, shared by compute and render shaders) holds grid dims, mode flag, B/S bitmasks, all SmoothLife kernel params, and `age_threshold`.
+- **Tick rate decoupled from frame rate**: `winit` requests redraws at vsync; `GpuSim::step` dispatches only when the tick interval has elapsed.
+- **No CPU↔GPU round-trips per frame**: after `upload_cells` on seed/reset, all simulation state lives on the GPU.
+- **Two-pass rendering**: cells → `Rgba16Float` offscreen texture (bilinear interpolation + HSV colouring); then Gaussian blur (or blit) → swapchain.
+
+## Module contracts
+
+- `GpuContext` — owns `device`, `queue`, `surface`, `surface_config`; created once in `ApplicationHandler::resumed`.
+- `GpuRenderer` — owns the render pipeline, offscreen texture, blur pipeline, and `VisualParams` uniform. Exposes `cell_bind_group_layout()` so `GpuSim` can wire its cell buffers.
+- `GpuSim` — owns both cell buffers, the `Params` uniform (shared by both shaders), compute pipeline, and bind groups. Exposes `step()`, `upload_cells()`, `display_bind_group()`, and `set_mode()`.
+
+## `Params` uniform layout (64 bytes)
+
+Both `sim.wgsl` and `render.wgsl` declare this struct; its WGSL layout must match the Rust `#[repr(C)]` layout exactly.
+
+| Bytes | Field(s)                       | Purpose                       |
+| ----- | ------------------------------ | ----------------------------- |
+| 0–7   | `grid_w`, `grid_h`             | Grid dimensions               |
+| 8–11  | `toroidal`                     | 1 = toroidal wrap             |
+| 12–15 | `mode`                         | 0 = GoL, 1 = SmoothLife       |
+| 16–23 | `birth_mask`, `survive_mask`   | GoL bitmasks                  |
+| 24–31 | `_pad0`, `_pad1`               | —                             |
+| 32–39 | `inner_radius`, `outer_radius` | SmoothLife ring radii         |
+| 40–47 | `birth_lo`, `birth_hi`         | SmoothLife birth interval     |
+| 48–55 | `survive_lo`, `survive_hi`     | SmoothLife survival interval  |
+| 56–59 | `sigmoid_sharpness`            | Logistic sigmoid steepness    |
+| 60–63 | `age_threshold`                | Energy level considered alive |
+
+## Shader paths
+
+Shaders live in `src/shaders/` and are embedded at compile time via `wgpu::include_wgsl!("shaders/<name>.wgsl")` (path relative to the calling `.rs` file).
+
+## Build & run
+
+```sh
+cargo build                   # check compilation
+cargo run                     # launch the simulation window
+cargo run --release           # full-speed GPU path
+RUST_LOG=wgpu=warn cargo run  # show wgpu validation messages
+```
+
+## Runtime configuration (`gol.toml`)
+
+All parameters live in `gol.toml` at the working directory. Edit and restart to apply.
+Sections: `[window]`, `[grid]`, `[rules]`, `[simulation]`, `[visuals]`, `[smoothlife]`.
+
+## Extending this project
+
+- **Interactive seeding**: capture mouse position and write cell energy via a staging buffer each frame.
+- **Rule-space drift**: slowly interpolate `Params` SmoothLife fields over time between two presets for ever-changing visuals.
+- **Multi-species**: run two continuous fields with different kernel parameters that influence each other's density sums.
+- **GPU stats readback**: periodically map a small reduction buffer to read aggregate energy/cell-count without a full grid readback.
+
 Simulation and rendering both run on the GPU via `wgpu`; the CPU only handles window input, timing, and initial seeding.
 All runtime parameters (grid size, rules, tick rate, HSV coloring) are driven by `gol.toml`.
 

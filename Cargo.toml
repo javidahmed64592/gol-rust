@@ -1,7 +1,7 @@
 [package]
 name = "gol-rust"
 version = "0.1.0"
-description = "Game of Life in Rust."
+description = "GPU-accelerated Conway's Game of Life and SmoothLife in Rust."
 edition = "2024"
 repository = "https://github.com/javidahmed64592/gol-rust"
 homepage = "https://github.com/javidahmed64592/gol-rust"
@@ -27,3 +27,7 @@ toml = "0.8"
 [profile.dist]
 inherits = "release"
 lto = "thin"
+
+[package.metadata.dist]
+# Include gol.toml in release archives so users can configure the simulation.
+include = ["gol.toml"]
