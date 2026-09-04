@@ -1,28 +1,57 @@
 # Conway's Game of Life — runtime configuration
-# Edit this file and restart the program to apply changes.
+
+[window]
+width  = 1024
+height = 1024
 
 [grid]
-width    = 256    # cells wide
-height   = 256    # cells tall
-toroidal = true   # wrap edges; false = dead fixed boundary
+width    = 4096
+height   = 4096
+toroidal = true    # wrap edges; false = dead fixed boundary
 
 [rules]
-# Neighbour counts that cause a dead cell to be born (B rule).
-birth   = [3]
+# Birth: Neighbour counts that cause a dead cell to be born (B rule).
+# Survive: Neighbour counts that allow a live cell to survive (S rule).
 
-# Neighbour counts that allow a live cell to survive (S rule).
+# Regular Conway's Game of Life: B3/S23
+birth   = [3]
 survive = [2, 3]
 
 # Other interesting rules (uncomment one block at a time):
-#   HighLife:  birth = [3, 6]        survive = [2, 3]
-#   Day&Night: birth = [3, 6, 7, 8]  survive = [3, 4, 6, 7, 8]
-#   Seeds:     birth = [2]            survive = []
-#   Morley:    birth = [3, 6, 8]      survive = [2, 4, 5]
+
+# HighLife:
+# birth = [3, 6]
+# survive = [2, 3]
+
+# Day&Night:
+# birth = [3, 6, 7, 8]
+# survive = [3, 4, 6, 7, 8]
+
+# Seeds:
+# birth = [2]
+# survive = []
+
+# Morley:
+# birth = [3, 6, 8]
+# survive = [2, 4, 5]
 
 [simulation]
 ticks_per_second = 10.0  # starting TPS (↑/↓ keys adjust at runtime)
 initial_density  = 0.3   # fraction of cells alive on R (random reset)
 
-[window]
-width  = 1024
-height = 1024
+[visuals]
+# RGB colour for dead cells (each component 0.0–1.0).
+background_color = [0.02, 0.02, 0.02]
+
+# Hue sweeps start_hue → end_hue as a cell ages 0 → max_lifetime generations.
+start_hue    = 200.0   # degrees (0–360) for newly born cells;
+end_hue      =  10.0   # degrees (0–360) for long-lived cells;
+max_lifetime =  100   # generations for the full hue sweep
+
+# Saturation is driven by live-neighbour density (0 = isolated, 1 = fully surrounded).
+sat_min = 0.5
+sat_max = 1.0
+
+# Value (brightness) of alive cells.  val_min reserved for energy-based modulation.
+val_min = 0.8
+val_max = 1.0
