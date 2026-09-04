@@ -5,8 +5,8 @@ width  = 1024
 height = 1024
 
 [grid]
-width    = 4096
-height   = 4096
+width    = 1024
+height   = 1024
 toroidal = true    # wrap edges; false = dead fixed boundary
 
 [rules]
@@ -55,3 +55,7 @@ sat_max = 1.0
 # Value (brightness) of alive cells.  val_min reserved for energy-based modulation.
 val_min = 0.8
 val_max = 1.0
+
+# Blur post-process pass (F=toggle, [/]=adjust radius).
+blur_enabled = false
+blur_radius  = 1.5   # Gaussian sigma in pixels; try 1.0–4.0 for different softness

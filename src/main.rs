@@ -39,6 +39,8 @@ struct App {
     generation: u64,
     fps: f64,
     last_frame: Instant,
+    blur_enabled: bool,
+    blur_radius: f32,
     cfg: Config,
 }
 
@@ -57,6 +59,8 @@ impl App {
             generation: 0,
             fps: 0.0,
             last_frame: Instant::now(),
+            blur_enabled: cfg.visuals.blur_enabled,
+            blur_radius: cfg.visuals.blur_radius,
             cfg,
         }
     }
@@ -111,6 +115,8 @@ impl ApplicationHandler for App {
                 val_max: self.cfg.visuals.val_max,
                 ..Default::default()
             },
+            self.blur_enabled,
+            self.blur_radius,
         );
         let sim = GpuSim::new(
             &ctx,
@@ -193,6 +199,24 @@ impl App {
                 let tps = 1.0 / self.tick_interval.as_secs_f64();
                 self.tick_interval = Duration::from_secs_f64(1.0 / (tps / 2.0).max(0.5));
             }
+            KeyCode::KeyF => {
+                self.blur_enabled = !self.blur_enabled;
+                if let Some((ctx, renderer, _)) = &mut self.gpu {
+                    renderer.set_blur_enabled(&ctx.queue, self.blur_enabled);
+                }
+            }
+            KeyCode::BracketLeft => {
+                self.blur_radius = (self.blur_radius - 0.5).max(0.0);
+                if let Some((ctx, renderer, _)) = &mut self.gpu {
+                    renderer.set_blur_radius(&ctx.queue, self.blur_radius);
+                }
+            }
+            KeyCode::BracketRight => {
+                self.blur_radius = (self.blur_radius + 0.5).min(10.0);
+                if let Some((ctx, renderer, _)) = &mut self.gpu {
+                    renderer.set_blur_radius(&ctx.queue, self.blur_radius);
+                }
+            }
             _ => {}
         }
     }
@@ -247,13 +271,19 @@ impl App {
 
         let tps = (1.0 / self.tick_interval.as_secs_f64()).round() as u32;
         let rule = rule_notation(self.cfg.birth_mask(), self.cfg.survive_mask());
+        let blur_info = if self.blur_enabled {
+            format!("Blur:{:.1}px", self.blur_radius)
+        } else {
+            "Blur:OFF".to_string()
+        };
         if let Some(w) = &self.window {
             w.set_title(&format!(
-                "GoL [{rule}]  Gen {gen}  {tps}tps  {state}\
-                 \u{2003}  |  Space=Pause  Enter=Step  R=Random  ↑↓=TPS\
+                "GoL [{rule}]  Gen {gen}  {tps}tps  {state}  {blur}\
+                 \u{2003}  |  Space=Pause  Enter=Step  R=Random  ↑↓=TPS  F=Blur  [/]=Radius\
                  \u{2003}  |  G=Glider  B=Blinker  T=Toad  P=R-pentomino  C=Beacon",
                 gen   = self.generation,
                 state = if self.paused { "PAUSED" } else { "RUNNING" },
+                blur  = blur_info,
             ));
             w.request_redraw();
         }

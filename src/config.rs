@@ -120,6 +120,10 @@ fn default_density() -> f32 {
 pub struct VisualsConfig {
     #[serde(default = "default_background_color")]
     pub background_color: [f32; 3],
+    #[serde(default)]
+    pub blur_enabled: bool,
+    #[serde(default = "default_blur_radius")]
+    pub blur_radius: f32,
     #[serde(default = "default_start_hue")]
     pub start_hue: f32,
     #[serde(default = "default_end_hue")]
@@ -140,6 +144,8 @@ impl Default for VisualsConfig {
     fn default() -> Self {
         Self {
             background_color: default_background_color(),
+            blur_enabled: false,
+            blur_radius: default_blur_radius(),
             start_hue: default_start_hue(),
             end_hue: default_end_hue(),
             max_lifetime: default_max_lifetime(),
@@ -153,6 +159,9 @@ impl Default for VisualsConfig {
 
 fn default_background_color() -> [f32; 3] {
     [0.05, 0.05, 0.05]
+}
+fn default_blur_radius() -> f32 {
+    1.5
 }
 fn default_start_hue() -> f32 {
     200.0
