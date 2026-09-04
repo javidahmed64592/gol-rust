@@ -118,6 +118,8 @@ fn default_density() -> f32 {
 
 #[derive(Deserialize)]
 pub struct VisualsConfig {
+    #[serde(default = "default_background_color")]
+    pub background_color: [f32; 3],
     #[serde(default = "default_start_hue")]
     pub start_hue: f32,
     #[serde(default = "default_end_hue")]
@@ -137,6 +139,7 @@ pub struct VisualsConfig {
 impl Default for VisualsConfig {
     fn default() -> Self {
         Self {
+            background_color: default_background_color(),
             start_hue: default_start_hue(),
             end_hue: default_end_hue(),
             max_lifetime: default_max_lifetime(),
@@ -148,6 +151,9 @@ impl Default for VisualsConfig {
     }
 }
 
+fn default_background_color() -> [f32; 3] {
+    [0.05, 0.05, 0.05]
+}
 fn default_start_hue() -> f32 {
     200.0
 }

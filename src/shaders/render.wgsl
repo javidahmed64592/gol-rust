@@ -18,6 +18,9 @@ struct Params {
 }
 
 struct VisualParams {
+    bg_r:         f32,
+    bg_g:         f32,
+    bg_b:         f32,
     start_hue:    f32, // hue at age 0 (degrees 0–360)
     end_hue:      f32, // hue at max_lifetime (degrees 0–360)
     max_lifetime: f32, // generations for the full hue sweep
@@ -25,7 +28,8 @@ struct VisualParams {
     sat_max:      f32, // saturation at full live-neighbour density
     val_min:      f32, // reserved for future energy-based value modulation
     val_max:      f32, // brightness of alive cells
-    _pad:         f32,
+    _pad0:        f32,
+    _pad1:        f32,
 }
 
 struct VsOut {
@@ -115,8 +119,7 @@ fn fs_main(in: VsOut) -> @location(0) vec4<f32> {
     let cell = cells[idx];
 
     if cell.x <= 0.5 {
-        // Dead cell — dark background.
-        return vec4<f32>(0.05, 0.05, 0.05, 1.0);
+        return vec4<f32>(visual.bg_r, visual.bg_g, visual.bg_b, 1.0);
     }
 
     // Hue: sweep start_hue → end_hue over max_lifetime generations.

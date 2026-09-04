@@ -40,6 +40,9 @@ ticks_per_second = 10.0  # starting TPS (↑/↓ keys adjust at runtime)
 initial_density  = 0.3   # fraction of cells alive on R (random reset)
 
 [visuals]
+# RGB colour for dead cells (each component 0.0–1.0).
+background_color = [0.02, 0.02, 0.02]
+
 # Hue sweeps start_hue → end_hue as a cell ages 0 → max_lifetime generations.
 start_hue    = 200.0   # degrees (0–360) for newly born cells;
 end_hue      =  10.0   # degrees (0–360) for long-lived cells;

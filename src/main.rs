@@ -99,6 +99,9 @@ impl ApplicationHandler for App {
         let renderer = GpuRenderer::new(
             &ctx,
             VisualParams {
+                bg_r: self.cfg.visuals.background_color[0],
+                bg_g: self.cfg.visuals.background_color[1],
+                bg_b: self.cfg.visuals.background_color[2],
                 start_hue: self.cfg.visuals.start_hue,
                 end_hue: self.cfg.visuals.end_hue,
                 max_lifetime: self.cfg.visuals.max_lifetime,

@@ -6,6 +6,9 @@ use wgpu::util::DeviceExt;
 #[repr(C)]
 #[derive(Clone, Copy, Pod, Zeroable)]
 pub struct VisualParams {
+    pub bg_r: f32,
+    pub bg_g: f32,
+    pub bg_b: f32,
     pub start_hue: f32,
     pub end_hue: f32,
     pub max_lifetime: f32,
@@ -13,7 +16,8 @@ pub struct VisualParams {
     pub sat_max: f32,
     pub val_min: f32,
     pub val_max: f32,
-    pub _pad: f32,
+    pub _pad0: f32,
+    pub _pad1: f32,
 }
 
 impl Default for VisualParams {
