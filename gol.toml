@@ -5,8 +5,8 @@ width  = 1024
 height = 1024
 
 [grid]
-width    = 4096
-height   = 4096
+width    = 2048
+height   = 2048
 toroidal = true    # wrap edges; false = dead fixed boundary
 
 [rules]
@@ -59,3 +59,39 @@ val_max = 1.0
 # Blur post-process pass (F=toggle, [/]=adjust radius).
 blur_enabled = false
 blur_radius  = 1.5   # Gaussian sigma in pixels; try 1.0–4.0 for different softness
+
+[smoothlife]
+# Set enabled = true to start in SmoothLife mode (toggle at runtime with M).
+enabled = false
+
+# Ring kernel: inner disk of radius `inner_radius` computes self-density m;
+# annulus out to `outer_radius` computes neighbourhood density n.
+# Larger outer_radius → smoother, more fluid behaviour but higher GPU cost.
+inner_radius = 2.0
+outer_radius = 6.0
+
+# Birth and survival intervals in [0, 1] neighbour-density space.
+# These are the classic SmoothLife "glider" parameters.
+birth_lo   = 0.278
+birth_hi   = 0.365
+survive_lo = 0.267
+survive_hi = 0.445
+
+# Logistic sigmoid steepness.  Smaller → very fluid/continuous; larger → more GoL-like.
+sigmoid_sharpness = 0.028
+
+# Energy level considered "alive" for age tracking and birth/death events.
+age_threshold = 0.1
+
+# Preset ideas (uncomment one block to try)
+# Larger, more stable blobs:
+# inner_radius = 3.0
+# outer_radius = 9.0
+# birth_lo   = 0.257
+# birth_hi   = 0.336
+# survive_lo = 0.365
+# survive_hi = 0.549
+# sigmoid_sharpness = 0.047
+#
+# Sharp-edged, faster dynamics:
+# sigmoid_sharpness = 0.010
