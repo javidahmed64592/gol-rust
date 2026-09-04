@@ -110,29 +110,48 @@ fn hsv_to_rgb(h: f32, s: f32, v: f32) -> vec3<f32> {
     }
 }
 
-@fragment
-fn fs_main(in: VsOut) -> @location(0) vec4<f32> {
-    // Clamp to avoid OOB when uv == 1.0 at the far edge.
-    let x = min(u32(in.uv.x * f32(params.grid_w)), params.grid_w - 1u);
-    let y = min(u32(in.uv.y * f32(params.grid_h)), params.grid_h - 1u);
-    let idx  = y * params.grid_w + x;
-    let cell = cells[idx];
-
+// Compute the RGBA colour for a single grid cell at integer coordinates.
+// Handles boundary conditions (toroidal wrap or dead-border) and returns the
+// background colour for dead cells, so bilinear interpolation blends edges.
+fn cell_rgba(xi: i32, yi: i32) -> vec4<f32> {
+    let w = i32(params.grid_w);
+    let h = i32(params.grid_h);
+    var cx: i32 = xi;
+    var cy: i32 = yi;
+    if params.toroidal == 1u {
+        cx = ((xi % w) + w) % w;
+        cy = ((yi % h) + h) % h;
+    } else {
+        if xi < 0 || yi < 0 || xi >= w || yi >= h {
+            return vec4<f32>(visual.bg_r, visual.bg_g, visual.bg_b, 1.0);
+        }
+    }
+    let cell = cells[u32(cy) * params.grid_w + u32(cx)];
     if cell.x <= 0.5 {
         return vec4<f32>(visual.bg_r, visual.bg_g, visual.bg_b, 1.0);
     }
-
-    // Hue: sweep start_hue → end_hue over max_lifetime generations.
-    let t   = clamp(cell.y / visual.max_lifetime, 0.0, 1.0);
-    let hue = mix(visual.start_hue, visual.end_hue, t);
-
-    // Saturation: driven by live-neighbour density.
-    let n_alive = alive_neighbours(i32(x), i32(y));
+    let t       = clamp(cell.y / visual.max_lifetime, 0.0, 1.0);
+    let hue     = mix(visual.start_hue, visual.end_hue, t);
+    let n_alive = alive_neighbours(cx, cy);
     let density = f32(n_alive) / 8.0;
     let sat     = mix(visual.sat_min, visual.sat_max, density);
+    return vec4<f32>(hsv_to_rgb(hue, sat, visual.val_max), 1.0);
+}
 
-    // Value: alive cells use val_max (energy proxy = 1.0 for Phase 2).
-    let val = visual.val_max;
+@fragment
+fn fs_main(in: VsOut) -> @location(0) vec4<f32> {
+    // Bilinear interpolation: blend the 4 nearest grid cells.
+    // Subtracting 0.5 centres the sample on each cell rather than its top-left corner.
+    let gx = in.uv.x * f32(params.grid_w) - 0.5;
+    let gy = in.uv.y * f32(params.grid_h) - 0.5;
+    let x0 = i32(floor(gx));
+    let y0 = i32(floor(gy));
+    let fx = gx - floor(gx);
+    let fy = gy - floor(gy);
 
-    return vec4<f32>(hsv_to_rgb(hue, sat, val), 1.0);
+    return mix(
+        mix(cell_rgba(x0, y0),     cell_rgba(x0 + 1, y0),     fx),
+        mix(cell_rgba(x0, y0 + 1), cell_rgba(x0 + 1, y0 + 1), fx),
+        fy,
+    );
 }
