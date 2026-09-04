@@ -7,7 +7,7 @@ mod patterns;
 
 use config::Config;
 use gpu_context::GpuContext;
-use gpu_renderer::GpuRenderer;
+use gpu_renderer::{GpuRenderer, VisualParams};
 use gpu_sim::GpuSim;
 use grid::Grid;
 use std::sync::Arc;
@@ -96,7 +96,19 @@ impl ApplicationHandler for App {
                 .expect("window creation failed"),
         );
         let ctx = pollster::block_on(GpuContext::new(Arc::clone(&window), win_w, win_h));
-        let renderer = GpuRenderer::new(&ctx);
+        let renderer = GpuRenderer::new(
+            &ctx,
+            VisualParams {
+                start_hue: self.cfg.visuals.start_hue,
+                end_hue: self.cfg.visuals.end_hue,
+                max_lifetime: self.cfg.visuals.max_lifetime,
+                sat_min: self.cfg.visuals.sat_min,
+                sat_max: self.cfg.visuals.sat_max,
+                val_min: self.cfg.visuals.val_min,
+                val_max: self.cfg.visuals.val_max,
+                ..Default::default()
+            },
+        );
         let sim = GpuSim::new(
             &ctx,
             renderer.cell_bind_group_layout(),
